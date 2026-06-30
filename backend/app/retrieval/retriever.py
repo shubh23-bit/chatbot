@@ -1,32 +1,23 @@
-from pymilvus import(
-    connections,Collection
-)
+from pymilvus import connections, Collection
 from app.ingestion.embedder import get_embedding
 
-class Retriever:
-    def __init__(self):
-        #connect milvs
 
+class Retriever:
+
+    def __init__(self):
         connections.connect(
             alias="default",
             host="localhost",
             port="19530"
         )
-        #load collection
-        self.collection=Collection("documents")
+
+        self.collection = Collection("documents")
         self.collection.load()
+
         print("Retriever Initialized Successfully")
-    
-    def embed_query(self,query:str):
-        embedding=get_embedding(query)
 
-        
-        print("Query :", query)
-        print("Type :", type(embedding))
-        print("Length :", len(embedding))
-        print("First Value Type :", type(embedding[0]))
-
-        return embedding
+    def embed_query(self, query: str):
+        return get_embedding(query)
 
     def search(self, query_embedding, k=5):
 
@@ -41,19 +32,21 @@ class Retriever:
         )
 
         return results
-if __name__ == "__main__":
 
-    retriever = Retriever()
-    query = "What is Remote Work Policy?"
-    embedding = retriever.embed_query(query)
-    results = retriever.search(
-        embedding,
-        k=3
-    )
+    def retrieve(self, query: str, k=5):
 
-    for hit in results[0]:
+        query_embedding = self.embed_query(query)
 
-        print("=" * 50)
-        print("Score :", hit.score)
-        print("Text :")
-        print(hit.entity.get("text"))
+        results = self.search(
+            query_embedding,
+            k
+        )
+
+        contexts = []
+
+        for hit in results[0]:
+            contexts.append(
+                hit.entity.get("text")
+            )
+
+        return contexts
