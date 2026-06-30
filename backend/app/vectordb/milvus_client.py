@@ -42,7 +42,7 @@ else:
         FieldSchema(
             name="embedding",
             dtype=DataType.FLOAT_VECTOR,
-            dim=1024
+            dim=1024  
         )
        
 
