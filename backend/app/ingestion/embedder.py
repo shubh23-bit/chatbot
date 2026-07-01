@@ -2,6 +2,9 @@ from sentence_transformers import SentenceTransformer
 
 
 class EmbeddingModel:
+    """
+    Creates embeddings using BGE model.
+    """
 
     def __init__(self):
         self.model = SentenceTransformer(

@@ -19,7 +19,6 @@ COLLECTION_NAME = "documents"
 if utility.has_collection(COLLECTION_NAME):
 
     print("Collection already exists")
-
     collection = Collection(COLLECTION_NAME)
 
 else:

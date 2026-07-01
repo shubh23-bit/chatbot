@@ -5,7 +5,7 @@ from langchain_text_splitters import RecursiveCharacterTextSplitter
 
 BASE_DIR = Path(__file__).resolve().parent.parent.parent
 
-pdf_path = BASE_DIR / "data" / "milvus.pdf"
+pdf_path = BASE_DIR / "data" / "hrPolicy.pdf"
 
 loader = PyPDFLoader(str(pdf_path))
 
