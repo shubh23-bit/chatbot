@@ -36,3 +36,10 @@ input {
 button {
   padding: 10px 20px;
 }
+.upload-box {
+  margin-bottom: 20px;
+}
+
+.upload-box p {
+  color: green;
+}

@@ -1,73 +1,85 @@
 from pathlib import Path
 from langchain_community.document_loaders import PyPDFLoader
 from langchain_text_splitters import RecursiveCharacterTextSplitter
-from pymilvus import Collection
-
-# from app.ingestion.embedder import get_embedding
-from embedder import embedding_model
 from pymilvus import (
     connections,
     Collection
 )
+
+from app.ingestion.embedder import embedding_model
+
 
 connections.connect(
     alias="default",
     host="localhost",
     port="19530"
 )
-BASE_DIR = Path(__file__).resolve().parent.parent.parent
-pdf_path = BASE_DIR / "data" / "milvus.pdf"
-
-loader = PyPDFLoader(str(pdf_path))
-documents = loader.load()
-print(f"Total Pages: {len(documents)}")
 
 
+def ingest_pdf(pdf_path: str):
 
+    # Load PDF
+    loader = PyPDFLoader(pdf_path)
+    documents = loader.load()
 
-splitter = RecursiveCharacterTextSplitter(
-    chunk_size=500,
-    chunk_overlap=100
+    # Chunking
+    splitter = RecursiveCharacterTextSplitter(
+        chunk_size=500,
+        chunk_overlap=100
+    )
+
+    chunks = splitter.split_documents(
+        documents
+    )
+
+    # Load Collection
+    collection = Collection(
+        "documents"
+    )
+
+    collection.load()
+
+    collection.delete(
+    expr="id >= 0"
 )
 
-chunks = splitter.split_documents(documents)
-print(f"Total Chunks: {len(chunks)}")
+    collection.flush()
 
+    texts = []
+    embeddings = []
 
+    # Generate Embeddings
+    for chunk in chunks:
 
+        texts.append(
+            chunk.page_content
+        )
 
-collection = Collection("documents")
-collection.load()
+        embedding = (
+            embedding_model.get_embedding(
+                chunk.page_content
+            )
+        )
 
+        embeddings.append(
+            embedding
+        )
 
+    # Insert into Milvus
+    data = [
+        texts,
+        embeddings
+    ]
 
+    result = collection.insert(
+        data
+    )
 
-texts = []
-embeddings = []
+    collection.flush()
 
-for chunk in chunks:
-
-    texts.append(chunk.page_content)
-    embedding = embedding_model.get_embedding(
-    chunk.page_content
-)
-
-    
-
-    embeddings.append(embedding)
-
-print("Embeddings Generated")
-
-
-
-
-data = [
-    texts,
-    embeddings
-]
-
-result = collection.insert(data)
-
-collection.flush()
-print("Data Inserted Successfully")
-print(result.primary_keys[:5])
+    return {
+        "pages": len(documents),
+        "chunks": len(chunks),
+        "inserted_ids":
+        result.primary_keys[:5]
+    }

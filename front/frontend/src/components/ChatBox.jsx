@@ -5,6 +5,7 @@ import Message from "./Message";
 
 function ChatBox() {
   const [messages, setMessages] = useState([]);
+  const [uploadMessage, setUploadMessage] = useState("");
 
   const sendMessage = async (question) => {
     if (!question.trim()) return;
@@ -45,8 +46,52 @@ function ChatBox() {
     }
   };
 
+  const uploadPdf = async (file) => {
+    if (!file) return;
+
+    const formData = new FormData();
+
+    formData.append("file", file);
+
+    try {
+      const response = await axios.post(
+        "http://127.0.0.1:8000/upload",
+        formData,
+        {
+          headers: {
+            "Content-Type": "multipart/form-data",
+          },
+        }
+      );
+
+      setUploadMessage(
+        `✅ ${response.data.message}`
+      );
+    } catch (error) {
+      console.log(error);
+
+      setUploadMessage(
+        "❌ Upload Failed"
+      );
+    }
+  };
+
   return (
     <>
+      <div className="upload-box">
+        <input
+          type="file"
+          accept=".pdf"
+          onChange={(e) =>
+            uploadPdf(
+              e.target.files[0]
+            )
+          }
+        />
+
+        <p>{uploadMessage}</p>
+      </div>
+
       <div className="chat-container">
         {messages.map((msg, index) => (
           <Message
@@ -57,9 +102,11 @@ function ChatBox() {
         ))}
       </div>
 
-      <ChatInput sendMessage={sendMessage} />
+      <ChatInput
+        sendMessage={sendMessage}
+      />
     </>
   );
 }
 
-export default ChatBox;
+export default ChatBox; 
