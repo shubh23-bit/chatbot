@@ -2,6 +2,7 @@ import { useState } from "react";
 import axios from "axios";
 import ChatInput from "./ChatInput";
 import Message from "./Message";
+import getSessionId from "../utils/session";
 
 function ChatBox() {
   const [messages, setMessages] = useState([]);
@@ -22,6 +23,7 @@ function ChatBox() {
       const response = await axios.post(
         "http://127.0.0.1:8000/chat",
         {
+          session_id: getSessionId(),
           question,
         }
       );
