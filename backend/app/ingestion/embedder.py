@@ -13,7 +13,7 @@ class EmbeddingModel:
 
     def get_embedding(self, text: str):
         return self.model.encode(text).tolist()
-
+ 
 
 embedding_model = EmbeddingModel()
 

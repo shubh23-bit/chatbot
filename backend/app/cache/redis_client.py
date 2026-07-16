@@ -11,19 +11,3 @@ print(
     client.ping()
 )
 
-client.set(
-    "name",
-    "Shubham"
-)
-
-print(
-    client.get("name")
-)
-
-client.delete(
-    "name"
-)
-
-print(
-    client.get("name")
-)
