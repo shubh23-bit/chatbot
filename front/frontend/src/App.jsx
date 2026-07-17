@@ -1,14 +1,25 @@
-import ChatBox from "./components/ChatBox";
+import Header from "./components/layout/Header";
+import Sidebar from "./components/layout/Sidebar";
+import ChatBox from "./components/chat/ChatBox";
 import getSessionId from "./utils/session";
 
 function App() {
-  console.log(
-    getSessionId()
-  );
+
+  console.log(getSessionId());
+
   return (
     <div className="app">
-      <h1>RAG Chatbot</h1>
-      <ChatBox />
+
+      <Header />
+
+      <div className="main-layout">
+
+        <Sidebar />
+
+        <ChatBox />
+
+      </div>
+
     </div>
   );
 }

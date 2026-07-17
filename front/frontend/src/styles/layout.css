@@ -1,0 +1,39 @@
+*{
+    margin:0;
+    padding:0;
+    box-sizing:border-box;
+}
+
+body{
+
+    font-family:Arial,Helvetica,sans-serif;
+
+    background:#f5f7fb;
+
+}
+
+.app{
+
+    min-height:100vh;
+
+}
+
+.header{
+
+    background:#2563eb;
+
+    color:white;
+
+    padding:20px 30px;
+
+}
+
+.main-layout{
+
+    display:flex;
+
+    gap:20px;
+
+    padding:20px;
+
+}

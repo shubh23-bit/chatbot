@@ -1,5 +1,5 @@
-from pymilvus import connections, Collection
 from app.ingestion.embedder import get_embedding
+from app.vectordb.collection_manager import get_collection
 
 
 class Retriever:
@@ -9,14 +9,7 @@ class Retriever:
 
     def __init__(self):
 
-        connections.connect(
-            alias="default",
-            host="localhost",
-            port="19530"
-        )
-
-        self.collection = Collection("documents")
-        self.collection.load()
+        self.collection = get_collection()
 
     def embed_query(self, query: str):
         """
@@ -46,9 +39,7 @@ class Retriever:
         Return top-k relevant chunks.
         """
 
-        query_embedding = self.embed_query(
-            query
-        )
+        query_embedding = self.embed_query(query)
 
         results = self.search(
             query_embedding,
@@ -63,3 +54,16 @@ class Retriever:
             )
 
         return contexts
+if __name__ == "__main__":
+
+    retriever = Retriever()
+
+    contexts = retriever.retrieve(
+        "What is remote work policy?",
+        k=3
+    )
+
+    for i, context in enumerate(contexts, start=1):
+        print(f"\nChunk {i}")
+        print("-" * 50)
+        print(context)
