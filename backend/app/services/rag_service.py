@@ -1,34 +1,61 @@
 from app.retrieval.retriever import Retriever
-from app.llm.generator import generate_answer
+
+from app.memory.memory_manager import (
+    get_history,
+    save_message
+)
+
+from app.prompt.prompt_builder import (
+    build_prompt
+)
+
+from app.llm.generator import (
+    generate_answer
+)
 
 
 retriever = Retriever()
 
 
-def ask_question(question: str):
-    """
-    Execute the complete RAG pipeline.
+def ask_question(
+    question: str,
+    session_id: str
+) -> str:
 
-    Steps:
-    1. Retrieve relevant chunks from Milvus.
-    2. Combine retrieved chunks into context.
-    3. Send context + question to the LLM.
-    4. Return the generated answer.
-    """
+    # Step 1
+    history = get_history(session_id)
 
-    # Retrieve top matching chunks
+    # Step 2
     contexts = retriever.retrieve(
         question,
         k=3
     )
 
-    # Build context for the LLM
     context = "\n\n".join(contexts)
 
-    # Generate answer
+    # Step 3
+    prompt = build_prompt(
+        history,
+        context,
+        question
+    )
+
+    # Step 4
     answer = generate_answer(
-        context=context,
-        question=question
+        prompt
+    )
+
+    # Step 5
+    save_message(
+        session_id,
+        "user",
+        question
+    )
+
+    save_message(
+        session_id,
+        "assistant",
+        answer
     )
 
     return answer
