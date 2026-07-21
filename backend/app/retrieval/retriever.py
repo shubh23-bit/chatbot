@@ -8,25 +8,26 @@ class Retriever:
     """
 
     def __init__(self):
-
         self.collection = get_collection()
 
     def embed_query(self, query: str):
         """
-        Convert user query into vector.
+        Convert user query into embedding.
         """
         return get_embedding(query)
 
-    def search(self, query_embedding, k=5):
+    def search(self, query_embedding, k=1):
         """
         Perform similarity search.
         """
-
         results = self.collection.search(
             data=[query_embedding],
             anns_field="embedding",
             param={
-                "metric_type": "COSINE"
+                "metric_type": "COSINE",
+                "params": {
+                    "ef": 64
+                }
             },
             limit=k,
             output_fields=["text"]
@@ -34,7 +35,7 @@ class Retriever:
 
         return results
 
-    def retrieve(self, query: str, k=5):
+    def retrieve(self, query: str, k=1):
         """
         Return top-k relevant chunks.
         """
@@ -46,14 +47,31 @@ class Retriever:
             k
         )
 
-        contexts = []
+        contexts = []   # ✅ Yahin banana hai
 
-        for hit in results[0]:
-            contexts.append(
-                hit.entity.get("text")
-            )
+        print("=" * 80)
+        print("RESULT COUNT:", len(results[0]))
+        print("=" * 80)
+
+        for i, hit in enumerate(results[0], start=1):
+
+            text = hit.entity.get("text")
+
+            print(f"\nChunk {i}")
+            print("Score :", hit.score)
+            print("TEXT :", repr(text))
+
+            if text:
+                contexts.append(text)
+
+        print("=" * 80)
+        print("RETURNING CONTEXTS")
+        print(contexts)
+        print("=" * 80)
 
         return contexts
+
+
 if __name__ == "__main__":
 
     retriever = Retriever()
@@ -63,7 +81,10 @@ if __name__ == "__main__":
         k=3
     )
 
+    print("\nRetrieved Chunks")
+    print("=" * 80)
+
     for i, context in enumerate(contexts, start=1):
         print(f"\nChunk {i}")
-        print("-" * 50)
+        print("-" * 60)
         print(context)

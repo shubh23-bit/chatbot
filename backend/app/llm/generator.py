@@ -1,19 +1,17 @@
-from langchain_ollama import OllamaLLM
+from langchain_ollama import ChatOllama
+from langchain_core.messages import HumanMessage
 
-llm = OllamaLLM(
-    model="phi3:mini"
+llm = ChatOllama(
+    model="phi3:mini",
+    temperature=0
 )
 
+def generate_answer(prompt):
 
-def generate_answer(prompt: str) -> str:
-    """
-    Sends the prompt to the LLM
-    and returns a plain string.
-    """
+    response = llm.invoke(
+        [
+            HumanMessage(content=prompt)
+        ]
+    )
 
-    response = llm.invoke(prompt)
-
-    if hasattr(response, "content"):
-        return response.content
-
-    return str(response)
+    return response.content

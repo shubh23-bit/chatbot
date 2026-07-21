@@ -1,12 +1,11 @@
 from app.memory.redis_client import get_redis_client
 import json
 
+MAX_STORE_MESSAGES = 20      # Redis me maximum messages
+MAX_CONTEXT_MESSAGES = 4     # LLM ko sirf itne messages
 
-def save_message(
-    session_id: str,
-    role: str,
-    content: str
-):
+
+def save_message(session_id: str, role: str, content: str):
 
     client = get_redis_client()
 
@@ -15,11 +14,8 @@ def save_message(
     history = client.get(key)
 
     if history:
-
         history = json.loads(history)
-
     else:
-
         history = []
 
     history.append(
@@ -29,13 +25,16 @@ def save_message(
         }
     )
 
+    # Keep only latest messages
+    history = history[-MAX_STORE_MESSAGES:]
+
     client.set(
         key,
         json.dumps(history)
     )
-def get_history(
-    session_id: str
-):
+
+
+def get_history(session_id: str):
 
     client = get_redis_client()
 
@@ -44,42 +43,18 @@ def get_history(
     history = client.get(key)
 
     if history:
+        history = json.loads(history)
 
-        return json.loads(history)
+        # Only last few messages are sent to LLM
+        return history[-MAX_CONTEXT_MESSAGES:]
 
     return []
-def clear_history(
-    session_id: str
-): 
+
+
+def clear_history(session_id: str):
 
     client = get_redis_client()
 
     key = f"chat:{session_id}"
 
     client.delete(key)
-
-if __name__ == "__main__":
-
-    session = "demo123"
-
-    save_message(
-        session,
-        "user",
-        "Hi"
-    )
-
-    save_message(
-        session,
-        "assistant",
-        "Hello!"
-    )
-
-    save_message(
-        session,
-        "user",
-        "What is Python?"
-    )
-
-    history = get_history(session)
-
-    print(history)

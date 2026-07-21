@@ -19,9 +19,16 @@ def ingest_pdf(pdf_path: str):
     # Chunk Documents
     # -------------------------
     splitter = RecursiveCharacterTextSplitter(
-        chunk_size=500,
-        chunk_overlap=100
-    )
+    chunk_size=500,
+    chunk_overlap=100,
+    separators=[
+        "\n\n",
+        "\n",
+        ". ",
+        " ",
+        ""
+    ]
+)
 
     chunks = splitter.split_documents(
         documents
@@ -76,12 +83,3 @@ def ingest_pdf(pdf_path: str):
     }
 
 
-if __name__ == "__main__":
-
-    BASE_DIR = Path(__file__).resolve().parent.parent.parent
-
-    pdf_path = BASE_DIR / "data" / "milvus.pdf"
-
-    result = ingest_pdf(str(pdf_path))
-
-    print(result)

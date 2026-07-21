@@ -88,8 +88,3 @@ def get_collection():
         create_index(collection)
     load_collection(collection)
     return collection
-if __name__ == "__main__":
-
-    collection = get_collection()
-
-    print(collection.name)
