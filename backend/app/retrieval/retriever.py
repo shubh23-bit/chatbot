@@ -1,5 +1,14 @@
-from app.ingestion.embedder import get_embedding
+import logging
+
+from app.ingestion.embedder import get_query_embedding
 from app.vectordb.collection_manager import get_collection
+
+logger = logging.getLogger(__name__)
+
+# Cosine similarity below this is treated as "not actually relevant" so the
+# LLM doesn't get handed unrelated chunks as if they were ground truth.
+# Tune based on real query logs if answers still look off.
+MIN_SIMILARITY_SCORE = 0.35
 
 
 class Retriever:
@@ -14,9 +23,9 @@ class Retriever:
         """
         Convert user query into embedding.
         """
-        return get_embedding(query)
+        return get_query_embedding(query)
 
-    def search(self, query_embedding, k=1):
+    def search(self, query_embedding, k=5):
         """
         Perform similarity search.
         """
@@ -30,61 +39,39 @@ class Retriever:
                 }
             },
             limit=k,
-            output_fields=["text"]
+            output_fields=["text", "page", "source"]
         )
 
         return results
 
-    def retrieve(self, query: str, k=1):
+    def retrieve(self, query: str, k=5):
         """
-        Return top-k relevant chunks.
+        Return up to k relevant chunks as
+        [{"text", "page", "source", "score"}, ...], dropping hits below
+        MIN_SIMILARITY_SCORE.
         """
 
         query_embedding = self.embed_query(query)
+        results = self.search(query_embedding, k)
 
-        results = self.search(
-            query_embedding,
-            k
-        )
+        contexts = []
 
-        contexts = []   # ✅ Yahin banana hai
-
-        print("=" * 80)
-        print("RESULT COUNT:", len(results[0]))
-        print("=" * 80)
-
-        for i, hit in enumerate(results[0], start=1):
+        for hit in results[0]:
+            if hit.score < MIN_SIMILARITY_SCORE:
+                continue
 
             text = hit.entity.get("text")
 
-            print(f"\nChunk {i}")
-            print("Score :", hit.score)
-            print("TEXT :", repr(text))
+            if not text:
+                continue
 
-            if text:
-                contexts.append(text)
+            contexts.append({
+                "text": text,
+                "page": hit.entity.get("page"),
+                "source": hit.entity.get("source"),
+                "score": hit.score
+            })
 
-        print("=" * 80)
-        print("RETURNING CONTEXTS")
-        print(contexts)
-        print("=" * 80)
+        logger.debug("Retrieved %d chunk(s) above threshold for query=%r", len(contexts), query)
 
         return contexts
-
-
-if __name__ == "__main__":
-
-    retriever = Retriever()
-
-    contexts = retriever.retrieve(
-        "What is remote work policy?",
-        k=3
-    )
-
-    print("\nRetrieved Chunks")
-    print("=" * 80)
-
-    for i, context in enumerate(contexts, start=1):
-        print(f"\nChunk {i}")
-        print("-" * 60)
-        print(context)

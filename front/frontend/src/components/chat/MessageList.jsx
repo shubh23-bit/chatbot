@@ -1,3 +1,4 @@
+import { useEffect, useRef } from "react";
 import Message from "./Message";
 
 function MessageList({
@@ -5,6 +6,14 @@ function MessageList({
   messages
 
 }) {
+
+  const bottomRef = useRef(null);
+
+  useEffect(() => {
+
+    bottomRef.current?.scrollIntoView({ behavior: "smooth" });
+
+  }, [messages]);
 
   return (
 
@@ -31,6 +40,8 @@ function MessageList({
         )
 
       }
+
+      <div ref={bottomRef} />
 
     </div>
 

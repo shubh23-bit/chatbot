@@ -1,4 +1,10 @@
+import logging
+
 from app.retrieval.retriever import Retriever
+from app.memory.exact_cache import (
+    get_cached_answer,
+    save_cached_answer
+)
 
 from app.memory.memory_manager import (
     get_history,
@@ -10,74 +16,104 @@ from app.prompt.prompt_builder import (
 )
 
 from app.llm.generator import (
-    generate_answer
+    generate_answer_stream
 )
 
+
+logger = logging.getLogger(__name__)
 
 retriever = Retriever()
 
 
-def ask_question(
-    question: str,
-    session_id: str
-) -> str:
+def _format_context(contexts):
+    """
+    Turn retrieved chunks into the text block handed to the LLM, tagging
+    each one with its source page so the model can ground its answer
+    (and so mismatched/irrelevant chunks are easier to spot in logs).
+    """
 
-    # Step 1
+    blocks = []
+
+    for c in contexts:
+        page = c.get("page")
+        label = f"[Page {page + 1}]" if isinstance(page, int) and page >= 0 else ""
+        blocks.append(f"{label} {c['text']}".strip())
+
+    return "\n\n".join(blocks)
+
+
+def ask_question_stream(question: str, session_id: str):
+    """
+    Yield the answer to `question` piece by piece as it's generated, so the
+    API layer can stream it straight to the client instead of blocking for
+    the full (CPU-bound, potentially slow) generation. Cache + history are
+    saved once the full answer has been assembled.
+    """
+
+    # ==================================================
+    # Step 1 : Check Exact Cache
+    # ==================================================
+
+    cached_answer = get_cached_answer(question)
+
+    if cached_answer:
+
+        logger.debug("Cache hit for question=%r", question)
+
+        save_message(session_id, "user", question)
+        save_message(session_id, "assistant", cached_answer)
+
+        yield cached_answer
+        return
+
+    logger.debug("Cache miss for question=%r", question)
+
+    # ==================================================
+    # Step 2 : Load Chat History
+    # ==================================================
+
     history = get_history(session_id)
 
-    # Step 2
-    contexts = retriever.retrieve(
-        question,
-        k=3
-    )
-    contexts = [
-    c.strip()
-    for c in contexts
-    if c and c.strip()
-]
+    # ==================================================
+    # Step 3 : Retrieve Relevant Chunks
+    # ==================================================
+
+    contexts = retriever.retrieve(question, k=5)
 
     if not contexts:
-        return "I couldn't find this information in the uploaded document."
+        answer = "I couldn't find this information in the uploaded document."
 
-    context = "\n\n".join(contexts)
+        save_message(session_id, "user", question)
+        save_message(session_id, "assistant", answer)
 
-    # Step 3
-    print("=" * 100)
-    print("CONTEXT TYPE :", type(context))
-    print("CONTEXT LENGTH :", len(context))
-    print("CONTEXT VALUE :")
-    print(repr(context))
-    print("=" * 100)
-    prompt = build_prompt(
-        history,
-        context,
-        question
-    )
-    
+        yield answer
+        return
 
-    
+    context = _format_context(contexts)
 
-    
+    logger.debug("Retrieved context (%d chars): %r", len(context), context)
 
-    # Step 4
-    answer = generate_answer(
-        prompt
-    )
+    # ==================================================
+    # Step 4 : Build Prompt
+    # ==================================================
 
-    # Step 5
-    save_message(
-        session_id,
-        "user",
-        question
-    )
+    prompt = build_prompt(history, context, question)
 
-    save_message(
-        session_id,
-        "assistant",
-        answer
-    )
+    # ==================================================
+    # Step 5 : Generate + Stream Answer
+    # ==================================================
 
+    full_answer = ""
 
-    
+    for piece in generate_answer_stream(prompt):
+        full_answer += piece
+        yield piece
 
-    return answer
+    # ==================================================
+    # Step 6 : Save Answer in Cache + Chat History
+    # ==================================================
+
+    save_cached_answer(question, full_answer)
+
+    save_message(session_id, "user", question)
+    save_message(session_id, "assistant", full_answer)

@@ -11,6 +11,16 @@ function ChatBox() {
         }
     ]);
 
+    const [isLoading, setIsLoading] = useState(false);
+
+    const updateLastMessage = (text) => {
+        setMessages((prev) => {
+            const updated = [...prev];
+            updated[updated.length - 1] = { role: "assistant", text };
+            return updated;
+        });
+    };
+
     const sendQuestion = async (question) => {
 
         if (!question.trim()) return;
@@ -24,30 +34,32 @@ function ChatBox() {
             }
         ]);
 
+        // Placeholder assistant message, filled in as the stream arrives
+        setMessages((prev) => [
+            ...prev,
+            {
+                role: "assistant",
+                text: ""
+            }
+        ]);
+
+        setIsLoading(true);
+
         try {
 
-            const response = await sendMessage(question);
-
-            setMessages((prev) => [
-                ...prev,
-                {
-                    role: "assistant",
-                    text: response.answer
-                }
-            ]);
+            await sendMessage(question, updateLastMessage);
 
         }
         catch (error) {
 
             console.error(error);
 
-            setMessages((prev) => [
-                ...prev,
-                {
-                    role: "assistant",
-                    text: "❌ Something went wrong."
-                }
-            ]);
+            updateLastMessage("❌ Something went wrong.");
+
+        }
+        finally {
+
+            setIsLoading(false);
 
         }
 
@@ -58,6 +70,7 @@ function ChatBox() {
         <ChatWindow
             messages={messages}
             sendMessage={sendQuestion}
+            isLoading={isLoading}
         />
 
     );

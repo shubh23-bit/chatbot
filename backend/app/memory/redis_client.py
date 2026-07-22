@@ -1,4 +1,8 @@
+import logging
+
 from redis import Redis
+
+logger = logging.getLogger(__name__)
 
 _client = None
 
@@ -17,7 +21,7 @@ def get_redis_client():
 
         _client.ping()
 
-        print("✅ Redis Connected Successfully")
+        logger.debug("Redis connected successfully")
 
     return _client
 

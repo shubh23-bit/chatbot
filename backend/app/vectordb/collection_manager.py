@@ -26,6 +26,17 @@ def create_collection():
         ),
 
         FieldSchema(
+            name="page",
+            dtype=DataType.INT64
+        ),
+
+        FieldSchema(
+            name="source",
+            dtype=DataType.VARCHAR,
+            max_length=500
+        ),
+
+        FieldSchema(
             name="embedding",
             dtype=DataType.FLOAT_VECTOR,
             dim=1024
@@ -76,15 +87,25 @@ def load_collection(collection):
     print("Collection Loaded Successfully")
 def get_collection():
     connect_to_milvus()
-    if utility.has_collection(
-        COLLECTION_NAME
-):
 
-        collection = Collection(
-            COLLECTION_NAME
-    )
+    if utility.has_collection(COLLECTION_NAME):
+        collection = Collection(COLLECTION_NAME)
+
+        existing_fields = {field.name for field in collection.schema.fields}
+        required_fields = {"page", "source"}
+
+        if not required_fields.issubset(existing_fields):
+            # Older collection created before page/source metadata was
+            # added. Every ingest already wipes and re-inserts all data
+            # (see ingest_pipeline.collection.delete), so dropping here
+            # loses nothing that a re-upload wouldn't already replace.
+            print("Old collection schema detected, recreating collection")
+            utility.drop_collection(COLLECTION_NAME)
+            collection = create_collection()
+            create_index(collection)
     else:
         collection = create_collection()
         create_index(collection)
+
     load_collection(collection)
     return collection

@@ -1,30 +1,25 @@
+import logging
+
 from fastapi import APIRouter
+from fastapi.responses import StreamingResponse
 
-from app.schemas.chat import (
-    ChatRequest,
-    ChatResponse
-)
+from app.schemas.chat import ChatRequest
+from app.services.rag_service import ask_question_stream
 
-from app.services.rag_service import ask_question
-
+logger = logging.getLogger(__name__)
 
 router = APIRouter()
 
 
-@router.post(
-    "/chat",
-    response_model=ChatResponse
-)
+@router.post("/chat")
 def chat(request: ChatRequest):
 
-    print("Session ID:", request.session_id)
-    print("Question:", request.question)
+    logger.debug("Session ID: %s, Question: %s", request.session_id, request.question)
 
-    answer = ask_question(
-        question=request.question,
-        session_id=request.session_id
-    )
-
-    return ChatResponse(
-        answer=answer
+    return StreamingResponse(
+        ask_question_stream(
+            question=request.question,
+            session_id=request.session_id
+        ),
+        media_type="text/plain"
     )

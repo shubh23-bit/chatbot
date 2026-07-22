@@ -5,7 +5,9 @@ function ChatWindow({
 
   messages,
 
-  sendMessage
+  sendMessage,
+
+  isLoading
 
 }) {
 
@@ -22,6 +24,8 @@ function ChatWindow({
       <ChatInput
 
         sendMessage={sendMessage}
+
+        disabled={isLoading}
 
       />
 
