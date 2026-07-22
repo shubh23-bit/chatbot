@@ -7,7 +7,10 @@ from pymilvus import (
 )
 
 from app.vectordb.milvus_client import connect_to_milvus
+
 COLLECTION_NAME = "documents"
+
+
 def create_collection():
 
     fields = [
@@ -46,6 +49,8 @@ def create_collection():
     print("Collection Created")
 
     return collection
+
+
 def create_index(collection):
 
     index_params = {
@@ -69,25 +74,52 @@ def create_index(collection):
     else:
 
         print("Index Already Exists")
+
+
 def load_collection(collection):
 
     collection.load()
 
     print("Collection Loaded Successfully")
-def get_collection():
-    connect_to_milvus()
-    if utility.has_collection(
-        COLLECTION_NAME
-):
 
-        collection = Collection(
-            COLLECTION_NAME
-    )
+
+def get_collection():
+
+    connect_to_milvus()
+
+    expected_fields = ["id", "text", "embedding"]
+
+    if utility.has_collection(COLLECTION_NAME):
+
+        collection = Collection(COLLECTION_NAME)
+
+        current_fields = [field.name for field in collection.schema.fields]
+
+        print("Current Schema :", current_fields)
+        print("Expected Schema:", expected_fields)
+
+        if current_fields != expected_fields:
+
+            print("Schema mismatch detected...")
+            print("Dropping old collection...")
+
+            utility.drop_collection(COLLECTION_NAME)
+
+            collection = create_collection()
+            create_index(collection)
+
     else:
+
+        print("Collection not found. Creating...")
+
         collection = create_collection()
         create_index(collection)
+
     load_collection(collection)
+
     return collection
+
+
 if __name__ == "__main__":
 
     collection = get_collection()
