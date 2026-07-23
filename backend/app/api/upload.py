@@ -17,13 +17,14 @@ UPLOAD_DIR.mkdir(
 @router.post("/upload")
 async def upload_pdf(
     file: UploadFile = File(...)
+    
 ):
 
     file_path = (
         UPLOAD_DIR /
         file.filename
     )
-
+    print("shubha",file_path)
     with open(
         file_path,
         "wb"
@@ -37,6 +38,7 @@ async def upload_pdf(
     result = ingest_pdf(
         str(file_path)
     )
+    print("shubham",result)
 
     return {
         "message":

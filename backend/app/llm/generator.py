@@ -1,12 +1,16 @@
-from langchain_ollama import ChatOllama
+from langchain_groq import ChatGroq
 from langchain_core.messages import HumanMessage
+from dotenv import load_dotenv
+import os
+# Load variables from .env
+load_dotenv()
 
-llm = ChatOllama(
-    model="qwen2.5:7b",
+
+llm = ChatGroq(
+    api_key=os.getenv("GROQ_API_KEY"),
+    model="llama-3.1-8b-instant",
     temperature=0,
-    # Bounds worst-case latency: without a cap, a rambling model can
-    # keep generating well past a useful answer length.
-    num_predict=400
+    max_tokens=400,
 )
 
 
